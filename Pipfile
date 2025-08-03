@@ -4,11 +4,16 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-langchain = "*"
-langgraph = "*"
 python-dotenv = "*"
+langchain-core = "*"
+langgraph = "*"
+langchain = {extras = ["openai"], version = "*"}
+langchain-openai = "*"
 
 [dev-packages]
 
 [requires]
 python_version = "3.13"
+
+[scripts]
+start = "python main.py"
