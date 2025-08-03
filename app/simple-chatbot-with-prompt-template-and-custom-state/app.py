@@ -11,7 +11,7 @@
 # Importing required libraries
 from dotenv import load_dotenv  # For loading environment variables
 from langchain.chat_models import init_chat_model  # For initializing chat models
-from langchain_core.messages import HumanMessage, AIMessage, BaseMessage  # Message types
+from langchain_core.messages import HumanMessage, AIMessage, BaseMessage, trim_messages  # Message types
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder  # Prompt templates
 from langgraph.checkpoint.memory import MemorySaver  # For conversation memory
 from langgraph.graph import START, MessagesState, StateGraph  # Graph components
@@ -40,6 +40,19 @@ class CustomState(TypedDict):
     language: str  # Language preference for responses
 
 # =============================================================================
+# MESSAGE TRIMMING
+# =============================================================================
+# Create a message trimmer to manage conversation history
+# This ensures the conversation stays within token limits
+trimmer = trim_messages(
+    max_tokens=1000,    # Maximum number of tokens to keep
+    strategy="last",    # Keep the last n messages
+    token_counter=model,  # Use the model to count tokens
+    allow_partial=False,  # Don't allow partial messages
+    start_on="human",  # Start trimming from the human message
+)
+
+# =============================================================================
 # PROMPT TEMPLATE SETUP
 # =============================================================================
 # Create a dynamic prompt template that includes:
@@ -62,6 +75,8 @@ prompt_template = ChatPromptTemplate.from_messages(
 # This function processes the current state and generates a response
 # It combines the prompt template with the model to create contextual responses
 def call_model(state: CustomState):
+    # Trim the messages to keep only the last 1000 tokens
+    trimmed_messages = trimmer.invoke(state['messages'])
     # Create the prompt using the template and current state
     prompt = prompt_template.invoke(state)
     # Generate response using the model
